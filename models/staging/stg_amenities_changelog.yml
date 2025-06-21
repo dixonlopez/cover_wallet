@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: stg_amenities_changelog
+    description: "Transformed changelog data for listing amenities."
+    columns:
+      - name: listing_id
+        description: "Unique identifier for the listing."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_listings')
+              field: listing_id
+      - name: change_date
+        description: "Date when the amenity list was changed."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "<= current_date()"
+      - name: amenities_list
+        description: "List of amenities at the time of the change."
+        tests:
+          - not_null
