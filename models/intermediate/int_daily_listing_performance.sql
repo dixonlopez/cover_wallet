@@ -1,11 +1,14 @@
 -- models/intermediate/int_daily_listing_performance.sql
 
--- This intermediate table combines data from staging models to create a daily snapshot
--- of listing performance and attributes. It serves as the base for the final mart layer.
--- Grain: day and listing_id
 
 {{ config(
-    materialized='table'    
+    materialized='table',
+    partition_by={
+        "field": "calendar_date",
+        "data_type": "date",
+        "granularity": "day"
+    },
+    cluster_by=['listing_id', 'neighborhood']
 ) }}
 
 with listings as (
@@ -24,100 +27,130 @@ with listings as (
         bathrooms_count,
         bedrooms_count,
         beds_count,
-        amenities_list,
-        price_per_night,
-        total_number_of_reviews,
-        first_review_date,
-        last_review_date,
-        review_scores_rating
-
+        price_per_night
     from {{ ref('stg_listings') }}
 ),
 
-calendar as (
+listing_availability as (
     select
+        listing_availability_uid,
         listing_id,
         calendar_date,
         is_available,
-        reservation_id, 
-        price_per_night_calendar,
+        reservation_id,
+        reservation_uid,
+        price_per_night_usd,
         minimum_nights,
         maximum_nights
-   from {{ ref('stg_calendar') }}
+    from {{ ref('stg_listing_availability') }}
 ),
 
 reservations as (
     select
-        reservation_id,
+        reservation_uid,
         listing_id,
+        reservation_id,
         reservation_start_date,
         reservation_end_date,
         reservation_duration_days,
-        total_reservation_price,
+        total_reservation_price_usd,
         is_duration_within_limits,
         applicable_minimum_nights,
         applicable_maximum_nights
-   from {{ ref('int_reservations') }}
+    from {{ ref('stg_reservations') }}
+),
+
+overall_reviews_summary as (
+    select
+        listing_id,
+        count(review_id) as total_number_of_reviews,
+        min(review_date) as first_review_date,
+        max(review_date) as last_review_date,
+        avg(review_score) as review_scores_rating
+    from {{ ref('stg_reviews') }}
+    group by listing_id
+),
+
+daily_reviews_snapshot as (
+    select
+        la.listing_id,
+        la.calendar_date,
+        count(sr.review_id) as cumulative_total_reviews,
+        min(sr.review_date) as cumulative_first_review_date,
+        max(sr.review_date) as cumulative_last_review_date,
+        avg(sr.review_score) as cumulative_review_scores_rating
+    from listing_availability la
+    left join {{ ref('stg_reviews') }} sr
+        on la.listing_id = sr.listing_id
+        and sr.review_date <= la.calendar_date
+    group by
+        la.listing_id,
+        la.calendar_date
+),
+
+amenity_changes as (
+    select
+        listing_id,
+        amenities_list,
+        valid_from_date,
+        valid_to_date
+    from {{ ref('stg_amenities_changelog') }}
 )
 
 select
-    cal.calendar_date,
-    l.listing_id,
-    l.listing_name,
-    l.host_id,
-    l.host_name,
-    l.host_since_date,
-    l.host_location,
-    l.neighborhood,
-    l.property_type,
-    l.room_type,
-    l.accommodates_capacity,
-    l.bathrooms_count,
-    l.bedrooms_count,
-    l.beds_count,
-    l.amenities_list,
-    l.has_air_conditioning,
-    l.has_lockbox,
-    l.has_first_aid_kit,
-    coalesce(cal.price_per_night_calendar, l.price_per_night) as daily_price,
-    cal.is_available,
-    -- is_occupied now directly uses reservation_id to signify a booking
-    case when cal.reservation_id is not null then 1 else 0 end as is_occupied,
-    cal.reservation_id, -- New: Expose reservation_id at the daily grain
-    res.reservation_start_date, -- New: Reservation start date
-    res.reservation_end_date,   -- New: Reservation end date
-    res.reservation_duration_days, -- New: Total days of the reservation
-    res.total_reservation_price, -- New: Total price for the reservation
-    res.is_duration_within_limits, -- New: Flag if reservation duration is within limits
-    res.applicable_minimum_nights, -- New: Applicable minimum nights for the reservation
-    res.applicable_maximum_nights, -- New: Applicable maximum nights for the reservation
+    listing_availability.listing_availability_uid,
+    listing_availability.calendar_date,
+    listings.listing_id,
+    listings.listing_name,
+    listings.host_id,
+    listings.host_name,
+    listings.host_since_date,
+    listings.host_location,
+    listings.host_verifications_list,
+    listings.neighborhood,
+    listings.property_type,
+    listings.room_type,
+    listings.accommodates_capacity,
+    listings.bathrooms_count,
+    listings.bedrooms_count,
+    listings.beds_count,
+    amenity_changes.amenities_list,
+    coalesce(listing_availability.price_per_night_usd, listings.price_per_night) as daily_price_usd,
+    listing_availability.is_available,
+    listing_availability.reservation_id,
+    reservations.reservation_uid,
+    reservations.reservation_start_date,
+    reservations.reservation_end_date,
+    reservations.reservation_duration_days,
+    reservations.total_reservation_price_usd,
+    reservations.is_duration_within_limits,
+    reservations.applicable_minimum_nights,
+    reservations.applicable_maximum_nights,
 
-    l.total_number_of_reviews,
-    l.first_review_date,
-    l.last_review_date,
-    l.review_scores_rating,
-    l.is_email_verified,
-    l.is_phone_verified,
-    l.has_reviews_verification,
-    l.is_kba_verified,
-    l.is_work_email_verified,
-    l.is_google_connected,
-    l.is_facebook_connected,
-    l.is_linkedin_connected,
-    l.is_jumio_verified,
-    l.has_offline_government_id,
-    l.has_online_government_id,
-    l.has_manual_identity_check,
-    l.has_online_identity_check,
-    l.is_amex_verified,
-    l.is_weibo_connected,
-    l.has_selfie_verification,
-    l.is_sesame_connected,
-    l.is_zhima_id_connected,
-    l.is_apple_connected
+    -- Overall review information
+    coalesce(overall_reviews_summary.total_number_of_reviews, 0) as overall_total_number_of_reviews,
+    overall_reviews_summary.first_review_date as overall_first_review_date,
+    overall_reviews_summary.last_review_date as overall_last_review_date,
+    overall_reviews_summary.review_scores_rating as overall_review_scores_rating,
+
+    -- Cumulative review information
+    coalesce(daily_reviews_snapshot.cumulative_total_reviews, 0) as cumulative_total_reviews,
+    daily_reviews_snapshot.cumulative_first_review_date,
+    daily_reviews_snapshot.cumulative_last_review_date,
+    coalesce(daily_reviews_snapshot.cumulative_review_scores_rating, 0) as cumulative_review_scores_rating
 from
-    calendar cal
+    listing_availability
 inner join
-    listings l on cal.listing_id = l.listing_id
-left join -- Use left join as not all calendar entries will be part of a reservation
-    reservations res on cal.reservation_id = res.reservation_id
+    listings on listing_availability.listing_id = listings.listing_id
+left join
+    reservations on listing_availability.reservation_uid = reservations.reservation_uid
+left join
+    amenity_changes
+    on listing_availability.listing_id = amenity_changes.listing_id
+    and listing_availability.calendar_date between amenity_changes.valid_from_date and coalesce(amenity_changes.valid_to_date, '9999-12-31')
+left join
+    overall_reviews_summary on listings.listing_id = overall_reviews_summary.listing_id
+left join
+    daily_reviews_snapshot
+    on listing_availability.listing_id = daily_reviews_snapshot.listing_id
+    and listing_availability.calendar_date = daily_reviews_snapshot.calendar_date

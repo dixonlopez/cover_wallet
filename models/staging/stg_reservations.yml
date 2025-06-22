@@ -1,0 +1,62 @@
+version: 2
+
+models:
+  - name: stg_reservations
+    description: "Staging model that aggregates reservation details. One row per unique reservation, derived from the base calendar model."
+    columns:
+      - name: reservation_uid
+        description: "Unique identifier (surrogate key) of the reservation."
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('base_calendar')
+              field: reservation_uid
+      - name: listing_id
+        description: "Foreign key to the listing associated with the reservation."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_listings')
+              field: listing_id
+      - name: reservation_id
+        description: "Original reservation ID from the data source."
+        tests:
+          - not_null
+      - name: reservation_start_date
+        description: "Start date of the reservation."
+        tests:
+          - not_null
+      - name: reservation_end_date
+        description: "End date of the reservation."
+        tests:
+          - not_null
+      - name: reservation_duration_days
+        description: "Total duration of the reservation in days."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: total_reservation_price_usd
+        description: "Total price paid for the entire reservation in USD."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: applicable_minimum_nights
+        description: "Minimum number of nights that applied to the reservation."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: applicable_maximum_nights
+        description: "Maximum number of nights that applied to the reservation."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: is_duration_within_limits
+        description: "Indicates if the reservation's duration was within the minimum and maximum night limits (TRUE/FALSE)."
+        tests:
+          - not_null
+          - is_available_boolean

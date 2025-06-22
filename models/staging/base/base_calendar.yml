@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: base_calendar
+    description: "Base model for raw calendar data. Performs initial cleaning, data typing, and generates unique keys for daily availability and reservations."
+    columns:
+      - name: listing_availability_uid
+        description: "Unique identifier (surrogate key) for each daily availability record of a listing."
+        tests:
+          - unique
+          - not_null
+      - name: reservation_uid
+        description: "Unique identifier (surrogate key) of the reservation. This will be NULL if the 'reservation_id' is NULL (i.e., the day is not reserved)."
+        tests:
+          - dbt_expectations.expect_column_values_to_not_be_null:
+              row_condition: "is_available = false"
+      - name: listing_id
+        description: "Foreign key linking to the listing."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_listings')
+              field: listing_id
+      - name: calendar_date
+        description: "Specific date of the availability record."
+        tests:
+          - not_null
+      - name: is_available
+        description: "Indicates if the listing is available for booking on this date (TRUE/FALSE)."
+        tests:
+          - not_null
+          - is_available_boolean
+      - name: reservation_id
+        description: "Original reservation ID as it appears in the data source. NULL if no reservation."
+      - name: price_per_night_usd
+        description: "Price per night in USD for the listing on this specific date. Zero if null."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: minimum_nights
+        description: "Minimum number of nights required for a reservation that includes this date."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: maximum_nights
+        description: "Maximum number of nights allowed for a reservation that includes this date."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+          - dbt_utils.expression_is_true:
+              expression: ">= minimum_nights"

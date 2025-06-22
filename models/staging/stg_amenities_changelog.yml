@@ -2,22 +2,28 @@ version: 2
 
 models:
   - name: stg_amenities_changelog
-    description: "Transformed changelog data for listing amenities."
+    description: "Staging model for the amenity changelog of listings."
     columns:
       - name: listing_id
-        description: "Unique identifier for the listing."
+        description: "Foreign key linking to the listing affected by the amenity change."
         tests:
           - not_null
           - relationships:
               to: ref('stg_listings')
               field: listing_id
       - name: change_date
-        description: "Date when the amenity list was changed."
+        description: "Date when the amenities configuration was recorded."
+        tests:
+          - not_null
+      - name: amenities_list
+        description: "List of amenities at this specific change_date, stored as an array of strings."
+        tests:
+          - not_null
+      - name: valid_from_date
+        description: "The start date from which this amenity configuration was valid for the listing. This is the change_date itself."
         tests:
           - not_null
           - dbt_utils.expression_is_true:
-              expression: "<= current_date()"
-      - name: amenities_list
-        description: "List of amenities at the time of the change."
-        tests:
-          - not_null
+              expression: "<= valid_to_date"              
+      - name: valid_to_date
+        description: "The end date until which this amenity configuration was valid for the listing. NULL indicates the latest (current) configuration."
