@@ -5,6 +5,7 @@
 with available_dates as (
     select
         listing_id,
+        listing_name,
         calendar_date
     from {{ ref('fct_daily_listing_performance') }}
     where is_available = true
@@ -14,6 +15,7 @@ with available_dates as (
 grouped_consecutive_dates as (
     select
         listing_id,
+        listing_name,
         calendar_date,
         date_sub(
             calendar_date,
@@ -26,6 +28,7 @@ grouped_consecutive_dates as (
 consecutive_availability_periods as (
     select
         listing_id,
+        any_value(listing_name) as listing_name,
         min(calendar_date) as valid_from_date,
         max(calendar_date) as valid_to_date,
         count(calendar_date) as consecutive_available_days_count
@@ -37,6 +40,7 @@ consecutive_availability_periods as (
 
 select
     listing_id,
+    listing_name,
     valid_from_date,
     valid_to_date,
     consecutive_available_days_count as max_consecutive_availability_days
