@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: rpt_neighborhood_price_increase
+    description: "Report showing the average price increase for neighborhoods between two specific date ranges, facilitating analysis of market dynamics."
+    columns:
+      - name: neighborhood
+        description: "The neighborhood for which the price change is calculated."
+        tests:
+          - not_null
+      - name: avg_daily_price_2021_usd
+        description: "Average daily price in USD for the neighborhood in 2021."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: avg_daily_price_2022_usd
+        description: "Average daily price in USD for the neighborhood in 2022."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: daily_price_increase_usd
+        description: "The increase (or decrease) in average daily price in USD for the neighborhood between the two comparison periods."
+        tests:
+          - not_null
+      - name: pct_daily_price_increase
+        description: "Percentage increase (or decrease) in average daily price for the neighborhood between the two comparison periods."

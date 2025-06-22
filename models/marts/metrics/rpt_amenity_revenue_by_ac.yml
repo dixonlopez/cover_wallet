@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: rpt_amenity_revenue_by_ac
+    description: "Aggregated report showing monthly revenue broken down by whether listings had air conditioning, including total revenue and percentages."
+    columns:
+      - name: calendar_month
+        description: "The month for which the revenue is reported (truncated to the beginning of the month)."
+        tests:
+          - not_null
+      - name: total_month_revenue
+        description: "Total revenue for the month across all listings."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: revenue_with_ac
+        description: "Total revenue generated from listings that had air conditioning for the month."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: revenue_without_ac
+        description: "Total revenue generated from listings that did NOT have air conditioning for the month."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: pct_with_ac
+        description: "Percentage of total monthly revenue generated from listings with air conditioning."
+
+      - name: pct_without_ac
+        description: "Percentage of total monthly revenue generated from listings without air conditioning."

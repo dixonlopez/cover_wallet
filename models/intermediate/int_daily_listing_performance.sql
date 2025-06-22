@@ -2,13 +2,7 @@
 
 
 {{ config(
-    materialized='table',
-    partition_by={
-        "field": "calendar_date",
-        "data_type": "date",
-        "granularity": "day"
-    },
-    cluster_by=['listing_id', 'neighborhood']
+    materialized='table'
 ) }}
 
 with listings as (
@@ -100,6 +94,8 @@ amenity_changes as (
 select
     listing_availability.listing_availability_uid,
     listing_availability.calendar_date,
+    date_trunc(listing_availability.calendar_date, month) AS calendar_month,
+    date_trunc(listing_availability.calendar_date, year) AS calendar_year,
     listings.listing_id,
     listings.listing_name,
     listings.host_id,

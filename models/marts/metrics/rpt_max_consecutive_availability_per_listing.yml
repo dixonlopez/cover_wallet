@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: rpt_max_consecutive_availability_per_listing
+    description: "Report showing the maximum number of consecutive days a listing was available without reservation, including the start and end dates of that period."
+    columns:
+      - name: listing_id
+        description: "Unique identifier of the listing."
+        tests:
+          - not_null
+      - name: valid_from_date
+        description: "The start date of the longest period of consecutive availability."
+        tests:
+          - not_null
+      - name: valid_to_date
+        description: "The end date of the longest period of consecutive availability."
+        tests:
+          - not_null
+      - name: max_consecutive_availability_days
+        description: "The maximum number of consecutive days the listing was available for booking."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
