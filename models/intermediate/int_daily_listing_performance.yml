@@ -1,0 +1,84 @@
+version: 2
+
+models:
+  - name: int_daily_listing_performance
+    description: "Intermediate model combining listing, availability, and reservation data at a daily per-listing grain. This model prepares data for the final mart layer."
+    columns:
+      - name: listing_availability_uid
+        description: "Unique identifier for the daily availability record."
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('stg_listing_availability')
+              field: listing_availability_uid
+      - name: calendar_date
+        description: "Date of the daily record."
+      - name: listing_id
+        description: "Unique identifier of the listing."
+      - name: listing_name
+        description: "Name of the listing."
+      - name: host_id
+        description: "Host identifier."
+      - name: host_name
+        description: "Host name."
+      - name: host_since_date
+        description: "Date since the host has been active."
+      - name: host_location
+        description: "Host's declared location."
+      - name: host_verifications_list
+        description: "List of host verification types as an array of strings."
+      - name: neighborhood
+        description: "Neighborhood of the listing."
+      - name: property_type
+        description: "Property type."
+      - name: room_type
+        description: "Room type."
+      - name: accommodates_capacity
+        description: "Maximum number of people the listing can accommodate."
+      - name: bathrooms_count
+        description: "Numeric count of available bathrooms."
+      - name: bedrooms_count
+        description: "Number of bedrooms in the property."
+      - name: beds_count
+        description: "Number of beds available."
+      - name: amenities_list
+        description: "List of amenities offered by the listing as an array of strings."
+      - name: daily_price_usd
+        description: "Effective daily price in USD, which can be the calendar price or the base listing price if no calendar price exists."
+      - name: is_available
+        description: "Indicates if the listing was available for booking on this date."
+      - name: reservation_id
+        description: "Original reservation ID if the listing was occupied on this date (NULL otherwise)."
+      - name: reservation_uid
+        description: "Reservation surrogate key if the listing was occupied on this date (NULL otherwise)."
+      - name: reservation_start_date
+        description: "Start date of the reservation if the listing was occupied on this date."
+      - name: reservation_end_date
+        description: "End date of the reservation if the listing was occupied on this date."
+      - name: reservation_duration_days
+        description: "Total duration of the reservation in days if the listing was occupied on this date."
+      - name: total_reservation_price_usd
+        description: "Total price paid for the entire reservation in USD if the listing was occupied on this date."
+      - name: is_duration_within_limits
+        description: "Indicates if the reservation's duration was within limits (TRUE/FALSE) if the listing was occupied on this date."
+      - name: applicable_minimum_nights
+        description: "Minimum nights applicable for the reservation if the listing was occupied on this date."
+      - name: applicable_maximum_nights
+        description: "Maximum nights applicable for the reservation if the listing was occupied on this date."
+      - name: overall_total_number_of_reviews
+        description: "Total number of reviews for the listing across all time."
+      - name: overall_first_review_date
+        description: "Date of the first review for the listing across all time."
+      - name: overall_last_review_date
+        description: "Date of the last review for the listing across all time."
+      - name: overall_review_scores_rating
+        description: "Average rating of the listing's reviews across all time."
+      - name: cumulative_total_reviews
+        description: "Total number of reviews for the listing up to the calendar date."
+      - name: cumulative_first_review_date
+        description: "Date of the first review for the listing up to the calendar date."
+      - name: cumulative_last_review_date
+        description: "Date of the last review for the listing up to the calendar date."
+      - name: cumulative_review_scores_rating
+        description: "Average rating of the listing's reviews up to the calendar date."

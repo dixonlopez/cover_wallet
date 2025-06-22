@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: stg_reviews
+    description: "Transformed review data from raw Semrush source."
+    columns:
+      - name: review_id
+        description: "Unique identifier for the review."
+        tests:
+          - unique
+          - not_null
+      - name: listing_id
+        description: "Identifier of the listing associated with the review."
+        tests:
+          - not_null
+          - relationships: 
+              to: ref('stg_listings') 
+              field: listing_id 
+      - name: review_score
+        description: "Numeric score given in the review."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 1"
+          - dbt_utils.expression_is_true:
+              expression: "<= 5"
+      - name: review_date
+        description: "Date when the review was submitted."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "<= current_date()"

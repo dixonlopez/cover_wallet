@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw_semrush
+    schema: semrush
+    tables:
+      - name: listings
+        identifier: LISTINGS
+        loaded_at_field: _etl_loaded_at
+      - name: amenities_changelog
+        identifier: AMENITIES_CHANGELOG_NEW
+      - name: calendar
+        identifier: CALENDAR
+      - name: generated_reviews
+        identifier: GENERATED_REVIEWS

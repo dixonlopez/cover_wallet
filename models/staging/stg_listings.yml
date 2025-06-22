@@ -1,0 +1,65 @@
+version: 2
+
+models:
+  - name: stg_listings
+    description: "Transformed listing data from raw Semrush source."
+    columns:
+      - name: listing_id
+        description: "Unique identifier for the listing."
+        tests:
+          - unique
+          - not_null
+      - name: listing_name
+        description: "Name of the listing."
+        tests:
+          - not_null
+      - name: host_id
+        description: "Unique identifier for the host."
+        tests:
+          - not_null
+      - name: host_name
+        description: "Name of the host."
+      - name: host_since_date
+        description: "Date the host joined."
+        tests:
+          - not_null
+      - name: host_location
+        description: "Geographic location of the host."
+      - name: host_verifications_list
+        description: "List of verifications completed by the host."
+      - name: neighborhood
+        description: "Neighborhood where the listing is located."
+      - name: property_type
+        description: "Type of property (e.g., apartment, house)."
+      - name: room_type
+        description: "Type of room (e.g., entire home, private room)."
+      - name: accommodates_capacity
+        description: "Maximum number of guests the listing can accommodate."
+        tests:
+          - not_null
+          - dbt_utils.at_least_one
+      - name: bathrooms_text
+        description: "Original text description of bathrooms."
+      - name: bathrooms_count
+        description: "Numeric count of bathrooms (can be decimal)."
+      - name: bedrooms_count
+        description: "Number of bedrooms."
+      - name: beds_count
+        description: "Number of beds."
+      - name: amenities_list
+        description: "List of amenities available at the listing."
+      - name: price_per_night
+        description: "Price per night for the listing."
+      - name: total_number_of_reviews
+        description: "Total number of reviews for the listing."
+      - name: first_review_date
+        description: "Date of the first review."
+      - name: last_review_date
+        description: "Date of the last review."
+      - name: review_scores_rating
+        description: "Overall review score rating."
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= 5"              

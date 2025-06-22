@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: stg_listing_availability
+    description: "Staging model providing daily listing availability details, derived from the base calendar model."
+    columns:
+      - name: listing_availability_uid
+        description: "Unique identifier for each daily listing availability record (surrogate key)."
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('base_calendar')
+              field: listing_availability_uid
+      - name: listing_id
+        description: "Foreign key to the listing."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_listings')
+              field: listing_id
+      - name: calendar_date
+        description: "Date of the availability record."
+        tests:
+          - not_null
+      - name: is_available
+        description: "Indicates if the listing is available on this date."
+        tests:
+          - not_null
+          - is_available_boolean              
+      - name: reservation_id
+        description: "Original reservation ID (NULL if not reserved)."
+      - name: reservation_uid
+        description: "Surrogate key of the reservation (NULL if not reserved)."
+        tests:
+          - relationships:
+              to: ref('stg_reservations')
+              field: reservation_uid
+      - name: price_per_night_usd
+        description: "Price per night in USD for the listing on this date."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: minimum_nights
+        description: "Minimum number of nights for the reservation on this date."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: maximum_nights
+        description: "Maximum number of nights for the reservation on this date."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
