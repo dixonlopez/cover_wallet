@@ -1,6 +1,3 @@
--- models/intermediate/int_daily_listing_performance.sql
-
-
 {{ config(
     materialized='table'
 ) }}
