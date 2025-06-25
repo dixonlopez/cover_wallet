@@ -5,7 +5,7 @@
 with revenue_by_segment as (
   select
     calendar_month,
-    'Air conditioning' in unnest(amenities_list) as has_air_conditioning,
+    has_air_conditioning,
     sum(daily_price_usd) as segment_revenue_usd
   from
     {{ ref('fct_daily_listing_performance') }}
